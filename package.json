@@ -1,0 +1,19 @@
+{
+  "name": "alarmcryptotimer_bot",
+  "version": "1.0.0",
+  "description": "crypto  telegram bot ",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon app.mjs"
+  },
+  "keywords": [],
+  "author": "Oleg Olegovich",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.2.2",
+    "telegraf": "^4.11.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  }
+}
