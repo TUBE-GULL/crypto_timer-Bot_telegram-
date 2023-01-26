@@ -23,6 +23,21 @@ export function selectTimercoin() {
    ).resize()
 }
 
+export function selectAlarmcoin() {
+   return Markup.keyboard(
+      ['/alarm btc 10000',
+         '/alarm btc 50000',
+         '/alarm btc 100000'
+      ]
+   ).resize()
+}
+
+export function getStopAlarm() {
+   return Markup.keyboard([
+      'ALARM STOP'
+   ]).resize()
+}
+
 
 export function readDataObject() {
    const fileData = readFileSync('./data/data.json', 'utf-8');
