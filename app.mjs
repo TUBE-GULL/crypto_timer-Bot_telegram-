@@ -8,7 +8,7 @@ dotenv.config();
 
 const bot = new Telegraf(process.env.TOKEN);
 const TIMERS = ['15min', '30min', '1h']
-
+const ALARM = ['up', 'down'];
 
 
 bot.use(session())
@@ -34,16 +34,13 @@ bot.use((ctx, next) => {
             ctx.reply(`${coin}| USD ${receiveCoin} $`, getStopTimer());
          }, interval)
       } else {
-         ctx.reply('для старта напиши "/timer" и напиши свою "coin"!\n пример ниже: ↓', selectTimercoin());
+         ctx.reply('для старта напиши "/timer" и напиши свою "coin"!\n example below: ↓', selectTimercoin());
 
       }
    }
 
-
    return next()
 })
-
-
 
 bot.start(ctx => {
 
@@ -56,7 +53,7 @@ bot.start(ctx => {
       });
    }
 
-   return ctx.replyWithHTML('I represent you in Crypto Timers !\n\n' +
+   return ctx.replyWithHTML('Hello my friend !\n\n' +
       'to see the rate of your cryptocurrency, just write!', getStartMenu());
 });
 
@@ -67,7 +64,7 @@ bot.on('edited_message', ctx => {
 //*************************************************************************************************** 
 
 bot.hears('start crypto timer', ctx =>
-   ctx.reply('для старта напиши "/timer" и напиши свою "coin"!\n пример ниже:', selectTimercoin())
+   ctx.reply('для старта напиши "/timer" и напиши свою "coin"!\n example below: ↓', selectTimercoin())
 );
 
 bot.command('/timer', async ctx => {
@@ -78,6 +75,7 @@ bot.command('/timer', async ctx => {
       ctx.session.data.timecoin = array[1]
       ctx.session.data.timecoin = ctx.session.data.timecoin.toUpperCase()
       console.log(ctx.session.data.timecoin)
+
       if (await getCoinURL(ctx.session.data.timecoin) === undefined) {
          ctx.reply('something is wrong ! try once more\n\n "для старта напиши "/timer" и напиши свою "coin"! "')
       } else {
@@ -116,58 +114,67 @@ bot.hears('TIMER STOP', ctx => {
 //*************************************************************************************************** 
 
 bot.hears('start crypto alarm', ctx => {
-   ctx.reply('для старта напиши  "/alarm"  и напиши свою "coin" и "Numbers" !', selectAlarmcoin());
+   ctx.reply('для старта напиши  "/alarm"  и напиши свою "coin" и "Numbers" ! \n\n example below: ↓', selectAlarmcoin());
 });
 
-bot.command('/alarm', ctx => {
-   if (ctx.message.text === '/alarm') {
-      ctx.reply('что то не так попробуй снова \n\n для старта напиши  "/alarm"  и напиши свою "coin" и "Numbers"! \n\n ', selectAlarmcoin());
-   } else {
-      let array = ctx.message.text.split(' ')
-      console.log(array)
-      ctx.session.data.alarminterval = array[2]
-      ctx.session.data.alarmcoin = array[1]
+bot.command('/alarm', async ctx => {
+   const message = ctx.message.text.replace('\/alarm', '');
+   const regex = message.match(/([a-zA-Z]+) (\d+)/);
+   if (regex) {
+      ctx.session.data.alarmcoin = regex[1].toUpperCase()
 
-      ctx.session.data.alarmcoin = ctx.session.data.alarmcoin.toUpperCase()
-      console.log(ctx.session.data.alarmcoin)
-      if (ctx.session.data.alarminterval === undefined) {
-         ctx.reply('ты зыбыл "Numbers" \n\n для старта напиши  "/alarm"  и напиши свою "coin" и "Numbers" !', selectAlarmcoin());
-      } else {
-         ctx.reply(`запустить  ${ctx.session.data.alarminterval}$ ${ctx.session.data.alarmcoin} `, {
+      ctx.session.data.alarminterval = regex[2]
+
+      if (await getCoinURL(ctx.session.data.alarmcoin) !== undefined) {
+         ctx.reply(`запустить  ${ctx.session.data.alarminterval}$ ${ctx.session.data.alarmcoin} \n\n выбери: \n\nв большию ↑ (выше ${ctx.session.data.alarminterval}) \n\n в меньшую ↓(ниже ${ctx.session.data.alarminterval})`, {
             reply_markup: {
                inline_keyboard: [[
-                  { text: 'START', callback_data: '/start_ALER' },
+                  { text: 'в большую сторону', callback_data: 'up' },
+                  { text: 'в мешьную сторону', callback_data: 'down' },
                ]]
             }
          })
       }
+   } else {
+      return ctx.reply('что то не так ! \n\n для старта напиши  "/alarm"  и напиши свою "coin" и "Numbers" !', selectAlarmcoin());
    }
 });
 
-bot.action('/start_ALER', async ctx => {
-   let receiveCoin = await getCoinURL(ctx.session.data.alarmcoin)
-   let interval = ctx.session.data.alarminterval
+bot.action(ALARM, async ctx => {
 
-   if (interval === undefined) {
-      ctx.reply('что то не так попробуй снова \n\n для старта напиши  "/alarm"  и напиши свою "coin" и "Numbers" !');
-   }
-   if (interval !== undefined) {
-      ctx.session.data.alarmId = setInterval(() => {
-         if (receiveCoin <= interval) {
-            console.log('start')
-            ctx.reply(` USD ${receiveCoin} $`, getStopAlarm());
-         }
-      }, 60000)
+   try {
+      let downUp = ctx.callbackQuery.data;
+      let interval = ctx.session.data.alarminterval
+
+      if (interval === undefined) {
+         ctx.reply('что то не так попробуй снова \n\n для старта напиши  "/alarm"  и напиши свою "coin" и "Numbers" !');
+      }
+      if (interval !== undefined) {
+
+         ctx.session.data.alarmId = setInterval(async () => {
+            let receiveCoin = await getCoinURL(ctx.session.data.alarmcoin)
+            let choice;
+
+            if (downUp === 'up') {
+               choice = receiveCoin >= interval
+            } else if (downUp === 'down') {
+               choice = receiveCoin <= interval
+            }
+            if (choice) {
+               ctx.reply(` USD ${receiveCoin} $`, getStopAlarm());
+            }
+         }, 60000 * 5)
+      }
+      await ctx.answerCbQuery();
    }
 
+   catch { (error) => console.log(error) };
 });
-
 
 bot.hears('ALARM STOP', ctx => {
-   clearInterval(ctx.session.data.timerId)
+   clearInterval(ctx.session.data.alarmId)
    ctx.reply('alarm stopped! \n\n to see the rate of your cryptocurrency, just write!', getStartMenu());
 });
-
 
 bot.on('text', async ctx => {
    let text = ctx.message.text
