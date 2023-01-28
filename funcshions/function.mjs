@@ -3,7 +3,7 @@ import { writeFile, readFileSync, writeFileSync } from 'node:fs';
 
 export function getStartMenu() {
    return Markup.keyboard([
-      'start crypto alarm', 'start crypto timer',
+      '⏰ start crypto alarm ', '⏱ start crypto timer ',
    ]).resize()
 };
 
